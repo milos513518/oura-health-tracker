@@ -7,17 +7,43 @@ from google.oauth2.service_account import Credentials
 
 # Oura API configuration
 OURA_TOKEN = os.environ.get("OURA_TOKEN")
-OURA_API_BASE = "https://api.ouraring.com/v2/usercollection"
 
 # Google Sheets configuration
 SHEET_ID = "1qc_8gnDFMkwnT3j2i_BFBWFqsLymroqVf-rrQuGzzOc"
 WORKSHEET_NAME = "oura_data"
 
+def get_oura_sleep(date, headers):
+    """Get sleep data from Oura API v2"""
+    url = "https://api.ouraring.com/v2/usercollection/daily_sleep"
+    params = {"start_date": date, "end_date": date}
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    data = response.json().get("data", [])
+    return data[0] if data else None
+
+def get_oura_readiness(date, headers):
+    """Get readiness data from Oura API v2"""
+    url = "https://api.ouraring.com/v2/usercollection/daily_readiness"
+    params = {"start_date": date, "end_date": date}
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    data = response.json().get("data", [])
+    return data[0] if data else None
+
+def get_oura_activity(date, headers):
+    """Get activity data from Oura API v2"""
+    url = "https://api.ouraring.com/v2/usercollection/daily_activity"
+    params = {"start_date": date, "end_date": date}
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    data = response.json().get("data", [])
+    return data[0] if data else None
+
 def get_oura_data(date):
     """Fetch all Oura data for a specific date"""
     headers = {"Authorization": f"Bearer {OURA_TOKEN}"}
     
-    data = {
+    result = {
         "date": date,
         "sleep_score": None,
         "readiness_score": None,
@@ -26,102 +52,48 @@ def get_oura_data(date):
         "deep_sleep": None,
         "rem_sleep": None,
         "light_sleep": None,
-        "awake_time": None,
         "sleep_efficiency": None,
-        "restless_periods": None,
-        "sleep_latency": None,
         "hrv_avg": None,
         "resting_hr": None,
-        "lowest_hr": None,
-        "avg_hr": None,
         "body_temp": None,
         "steps": None,
         "calories": None,
-        "active_calories": None,
-        "met_min_high": None,
-        "met_min_medium": None,
-        "met_min_low": None,
     }
     
-    # Get Sleep data
     try:
-        sleep_url = f"{OURA_API_BASE}/daily_sleep"
-        sleep_params = {"start_date": date, "end_date": date}
-        sleep_response = requests.get(sleep_url, headers=headers, params=sleep_params)
-        sleep_response.raise_for_status()
-        sleep_data = sleep_response.json().get("data", [])
-        
+        sleep_data = get_oura_sleep(date, headers)
         if sleep_data:
-            sleep = sleep_data[0]["contributors"]
-            data["sleep_score"] = sleep_data[0].get("score")
-            data["total_sleep"] = sleep.get("total_sleep")
-            data["deep_sleep"] = sleep.get("deep_sleep")
-            data["rem_sleep"] = sleep.get("rem_sleep")
-            data["light_sleep"] = sleep.get("light_sleep")
-            data["awake_time"] = sleep.get("awake_time")
-            data["sleep_efficiency"] = sleep.get("efficiency")
-            data["restless_periods"] = sleep.get("restless_periods")
-            data["sleep_latency"] = sleep.get("latency")
+            result["sleep_score"] = sleep_data.get("score")
+            contributors = sleep_data.get("contributors", {})
+            result["total_sleep"] = contributors.get("total_sleep")
+            result["deep_sleep"] = contributors.get("deep_sleep")
+            result["rem_sleep"] = contributors.get("rem_sleep")
+            result["light_sleep"] = contributors.get("light_sleep")
+            result["sleep_efficiency"] = contributors.get("efficiency")
     except Exception as e:
         print(f"Error fetching sleep data: {e}")
     
-    # Get Readiness data
     try:
-        readiness_url = f"{OURA_API_BASE}/daily_readiness"
-        readiness_params = {"start_date": date, "end_date": date}
-        readiness_response = requests.get(readiness_url, headers=headers, params=readiness_params)
-        readiness_response.raise_for_status()
-        readiness_data = readiness_response.json().get("data", [])
-        
+        readiness_data = get_oura_readiness(date, headers)
         if readiness_data:
-            data["readiness_score"] = readiness_data[0].get("score")
-            contributors = readiness_data[0].get("contributors", {})
-            data["hrv_avg"] = contributors.get("hrv_balance")
-            data["resting_hr"] = contributors.get("resting_heart_rate")
-            data["body_temp"] = contributors.get("body_temperature")
+            result["readiness_score"] = readiness_data.get("score")
+            contributors = readiness_data.get("contributors", {})
+            result["hrv_avg"] = contributors.get("hrv_balance")
+            result["resting_hr"] = contributors.get("resting_heart_rate")
+            result["body_temp"] = contributors.get("body_temperature")
     except Exception as e:
         print(f"Error fetching readiness data: {e}")
     
-    # Get Activity data
     try:
-        activity_url = f"{OURA_API_BASE}/daily_activity"
-        activity_params = {"start_date": date, "end_date": date}
-        activity_response = requests.get(activity_url, headers=headers, params=activity_params)
-        activity_response.raise_for_status()
-        activity_data = activity_response.json().get("data", [])
-        
+        activity_data = get_oura_activity(date, headers)
         if activity_data:
-            data["activity_score"] = activity_data[0].get("score")
-            data["steps"] = activity_data[0].get("steps")
-            data["calories"] = activity_data[0].get("total_calories")
-            data["active_calories"] = activity_data[0].get("active_calories")
-            
-            contributors = activity_data[0].get("contributors", {})
-            data["met_min_high"] = contributors.get("meet_daily_targets")
-            data["met_min_medium"] = contributors.get("move_every_hour")
-            data["met_min_low"] = contributors.get("training_frequency")
-            data["avg_hr"] = activity_data[0].get("average_met_minutes")
+            result["activity_score"] = activity_data.get("score")
+            result["steps"] = activity_data.get("steps")
+            result["calories"] = activity_data.get("total_calories")
     except Exception as e:
         print(f"Error fetching activity data: {e}")
     
-    # Get Heart Rate data
-    try:
-        hr_url = f"{OURA_API_BASE}/heartrate"
-        hr_params = {"start_date": date, "end_date": date}
-        hr_response = requests.get(hr_url, headers=headers, params=hr_params)
-        hr_response.raise_for_status()
-        hr_data = hr_response.json().get("data", [])
-        
-        if hr_data:
-            # Calculate average and lowest HR from the day's data
-            heart_rates = [item["bpm"] for item in hr_data if item.get("bpm")]
-            if heart_rates:
-                data["avg_hr"] = sum(heart_rates) / len(heart_rates)
-                data["lowest_hr"] = min(heart_rates)
-    except Exception as e:
-        print(f"Error fetching heart rate data: {e}")
-    
-    return data
+    return result
 
 def write_to_google_sheets(data):
     """Write Oura data to Google Sheets"""
@@ -148,14 +120,12 @@ def write_to_google_sheets(data):
         worksheet = sheet.worksheet(WORKSHEET_NAME)
     except gspread.WorksheetNotFound:
         # Create worksheet with headers if it doesn't exist
-        worksheet = sheet.add_worksheet(title=WORKSHEET_NAME, rows=1000, cols=30)
+        worksheet = sheet.add_worksheet(title=WORKSHEET_NAME, rows=1000, cols=20)
         headers = [
             "date", "sleep_score", "readiness_score", "activity_score",
             "total_sleep", "deep_sleep", "rem_sleep", "light_sleep",
-            "awake_time", "sleep_efficiency", "restless_periods", "sleep_latency",
-            "hrv_avg", "resting_hr", "lowest_hr", "avg_hr", "body_temp",
-            "steps", "calories", "active_calories",
-            "met_min_high", "met_min_medium", "met_min_low"
+            "sleep_efficiency", "hrv_avg", "resting_hr", "body_temp",
+            "steps", "calories"
         ]
         worksheet.append_row(headers)
     
@@ -180,21 +150,12 @@ def write_to_google_sheets(data):
         data["deep_sleep"],
         data["rem_sleep"],
         data["light_sleep"],
-        data["awake_time"],
         data["sleep_efficiency"],
-        data["restless_periods"],
-        data["sleep_latency"],
         data["hrv_avg"],
         data["resting_hr"],
-        data["lowest_hr"],
-        data["avg_hr"],
         data["body_temp"],
         data["steps"],
         data["calories"],
-        data["active_calories"],
-        data["met_min_high"],
-        data["met_min_medium"],
-        data["met_min_low"],
     ]
     
     # Convert None to empty string for Google Sheets
@@ -202,7 +163,7 @@ def write_to_google_sheets(data):
     
     if row_index:
         # Update existing row
-        worksheet.update(f"A{row_index}:W{row_index}", [row_data])
+        worksheet.update(f"A{row_index}:N{row_index}", [row_data])
         print(f"Updated existing data for {date_str}")
     else:
         # Append new row

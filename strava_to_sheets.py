@@ -24,9 +24,17 @@ def get_strava_access_token():
         "grant_type": "refresh_token"
     }
     
+    print(f"Requesting new access token from Strava...")
     response = requests.post(url, data=payload)
-    response.raise_for_status()
-    return response.json()["access_token"]
+    
+    if response.status_code != 200:
+        print(f"ERROR: Failed to get access token. Status: {response.status_code}")
+        print(f"Response: {response.text}")
+        response.raise_for_status()
+    
+    token_data = response.json()
+    print(f"Successfully obtained access token")
+    return token_data["access_token"]
 
 def get_strava_activities(access_token, after_date):
     """Fetch activities from Strava after a specific date"""

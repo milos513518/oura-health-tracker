@@ -3,7 +3,7 @@ name: Daily Strava Workout Sync
 on:
   schedule:
     # Runs at 9:30 AM Pacific Time every day (30 min after Oura sync)
-    - cron: '0 17 30 * * *'
+    - cron: '30 17 * * *'
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:

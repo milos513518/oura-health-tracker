@@ -59,22 +59,21 @@ Then update the SELECTORS dictionary below with your findings.
 """
 
 SELECTORS = {
-    # ⚠️ THESE ARE PLACEHOLDERS - YOU MUST UPDATE THEM
+    # Login page selectors - VERIFIED from HeartCloud
+    "email_field": "#email",
+    "password_field": "#password",
+    "login_button": "button[type='submit']",
     
-    # Login page selectors
-    "email_field": "#email",  # Often an ID like #email or input[name='email']
-    "password_field": "#password",  # Often #password or input[name='password']
-    "login_button": "button[type='submit']",  # Or .login-btn, #login, etc.
+    # After login - sessions page (History tab)
+    # HeartCloud uses a table structure for Training History
+    "sessions_container": "table",  # The table containing all sessions
+    "session_row": "tr",  # Each table row is a session
     
-    # After login - sessions page
-    "sessions_container": ".sessions-list",  # Container holding all sessions
-    "session_row": ".session-item",  # Each individual session row
-    
-    # Within each session row
-    "date": ".session-date",  # Where the date is displayed
-    "coherence_score": ".coherence-score",  # The coherence number
-    "session_length": ".session-duration",  # Duration like "15:30"
-    "achievement_score": ".achievement-score",  # Achievement points
+    # Within each session row (table columns)
+    "date": "td:nth-child(1)",  # First column = Date
+    "session_length": "td:nth-child(2)",  # Second column = Length
+    "coherence_score": "td:nth-child(3)",  # Third column = Coherence
+    "achievement_score": "td:nth-child(4)",  # Fourth column = Achievement
 }
 
 # ==========================================
